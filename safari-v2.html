@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#f8fafd">
+  <title>CodeQuest Academy</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;background:#f8fafd;color:#1f1f1f;font-family:-apple-system,BlinkMacSystemFont,"Noto Sans JP",sans-serif}.card{width:min(440px,calc(100% - 32px));padding:28px;border:1px solid #c7d0df;border-radius:24px;background:#fff;text-align:center;box-shadow:0 2px 10px rgba(31,31,31,.08)}.mark{width:56px;height:56px;margin:0 auto 16px;border-radius:18px;display:grid;place-items:center;background:#0b57d0;color:#fff;font-weight:900;font-size:20px}.spinner{width:32px;height:32px;margin:22px auto 0;border:3px solid #d3e3fd;border-top-color:#0b57d0;border-radius:50%;animation:r .9s linear infinite}@keyframes r{to{transform:rotate(360deg)}}h1{font-size:22px;margin:0 0 8px}p{margin:0;color:#5f6368;line-height:1.7}.error{display:none;text-align:left}.error button{appearance:none;border:0;border-radius:999px;background:#0b57d0;color:white;padding:12px 18px;margin-top:16px;font:700 15px inherit}.detail{font-size:12px;margin-top:10px;overflow-wrap:anywhere}
+  </style>
+</head>
+<body>
+  <main class="card">
+    <div class="mark">CQ</div>
+    <section id="loading"><h1>CodeQuest Academyを起動中</h1><p id="phase">アプリ本体を読み込んでいます。</p><div class="spinner"></div></section>
+    <section class="error" id="error"><h1>読み込みに失敗しました</h1><p id="message">通信状態を確認して、再読み込みしてください。</p><p class="detail" id="detail"></p><button id="retry" type="button">もう一度読み込む</button></section>
+  </main>
+<script>
+(function () {
+  'use strict';
+  var loading = document.getElementById('loading');
+  var errorBox = document.getElementById('error');
+  var message = document.getElementById('message');
+  var detail = document.getElementById('detail');
+  var phase = document.getElementById('phase');
+
+  document.getElementById('retry').onclick = function () { location.reload(); };
+
+  function fail(text, err) {
+    loading.style.display = 'none';
+    errorBox.style.display = 'block';
+    message.textContent = text || '通信状態を確認して、再読み込みしてください。';
+    detail.textContent = err && err.message ? err.message : '';
+  }
+
+  function base64ToBytes(base64) {
+    var raw = atob(base64);
+    var bytes = new Uint8Array(raw.length);
+    for (var i = 0; i < raw.length; i += 1) bytes[i] = raw.charCodeAt(i);
+    return bytes;
+  }
+
+  function decodeUtf8(bytes) {
+    if (typeof TextDecoder !== 'undefined') {
+      return new TextDecoder('utf-8').decode(bytes);
+    }
+    var binary = '';
+    var chunk = 8192;
+    for (var i = 0; i < bytes.length; i += chunk) {
+      binary += String.fromCharCode.apply(null, bytes.subarray(i, Math.min(i + chunk, bytes.length)));
+    }
+    try { return decodeURIComponent(escape(binary)); }
+    catch (_) { return binary; }
+  }
+
+  function loadScript(url) {
+    return new Promise(function (resolve, reject) {
+      var script = document.createElement('script');
+      script.src = url;
+      script.onload = resolve;
+      script.onerror = reject;
+      document.head.appendChild(script);
+    });
+  }
+
+  function ensurePako() {
+    if (window.pako && window.pako.ungzip) return Promise.resolve();
+    return loadScript('https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js')
+      .catch(function () { return loadScript('https://unpkg.com/pako@2.1.0/dist/pako.min.js'); });
+  }
+
+  function inflateWithPako(bytes) {
+    phase.textContent = 'Safari互換モードで展開しています。';
+    return ensurePako().then(function () {
+      if (!window.pako || !window.pako.ungzip) throw new Error('展開ライブラリを利用できません。');
+      var inflated = window.pako.ungzip(bytes);
+      if (!inflated || typeof inflated.length !== 'number') throw new Error('展開結果が空です。');
+      return decodeUtf8(inflated);
+    });
+  }
+
+  function inflateNative(bytes) {
+    phase.textContent = 'ブラウザ標準モードで展開しています。';
+    var stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
+    return new Response(stream).text();
+  }
+
+  function inflate(bytes) {
+    if (typeof DecompressionStream !== 'undefined' && typeof Response !== 'undefined') {
+      return inflateNative(bytes).catch(function () { return inflateWithPako(bytes); });
+    }
+    return inflateWithPako(bytes);
+  }
+
+  function replaceDocument(html) {
+    if (typeof html !== 'string') throw new Error('展開結果をHTML文字列へ変換できませんでした。');
+    if (html.length < 1000 || html.indexOf('CodeQuest Academy') === -1) throw new Error('アプリ本体の内容が不完全です。');
+    document.open('text/html', 'replace');
+    document.write(html);
+    document.close();
+  }
+
+  function start() {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', 'index.html?v=' + Date.now(), true);
+    xhr.onreadystatechange = function () {
+      if (xhr.readyState !== 4) return;
+      if (xhr.status < 200 || xhr.status >= 300) {
+        fail('アプリ本体を取得できませんでした。', new Error('HTTP ' + xhr.status));
+        return;
+      }
+      try {
+        var match = xhr.responseText.match(/atob\(['\"]([^'\"]+)['\"]\)/);
+        if (!match || !match[1]) throw new Error('圧縮データが見つかりません。');
+        inflate(base64ToBytes(match[1])).then(replaceDocument).catch(function (err) {
+          fail('アプリの展開に失敗しました。', err);
+        });
+      } catch (err) {
+        fail('アプリの読み込み処理に失敗しました。', err);
+      }
+    };
+    xhr.onerror = function () { fail('ネットワーク接続を確認してください。'); };
+    xhr.send();
+  }
+
+  start();
+}());
+</script>
+</body>
+</html>
