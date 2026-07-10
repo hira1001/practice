@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#F8FAFD">
+  <meta name="description" content="CodeQuest Academy — 要件ベースのReviewerを備えたPython学習MVP">
+  <title>CodeQuest Academy</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="top-app-bar">
+    <div class="brand-wrap">
+      <button class="icon-button menu-button" id="menuButton" aria-label="学習メニューを開く" aria-controls="navDrawer" aria-expanded="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16v2H4V6Zm0 5h16v2H4v-2Zm0 5h16v2H4v-2Z"/></svg>
+      </button>
+      <div class="brand-mark" aria-hidden="true">CQ</div>
+      <div class="brand-text"><strong>CodeQuest Academy</strong><span>Python learning workspace</span></div>
+    </div>
+    <div class="top-context">
+      <div class="top-context-copy"><small id="topCourseLabel">Course 001</small><strong id="topLessonLabel">最初の通信</strong></div>
+      <div class="top-progress" aria-label="現在のコース進捗"><span id="topProgressFill" style="width:0%"></span></div>
+    </div>
+    <div class="top-actions">
+      <div class="stat-chip">Lv <strong id="level">1</strong></div>
+      <div class="stat-chip">XP <strong id="xp">0</strong></div>
+      <div class="stat-chip">習熟度 <strong id="mastery">0%</strong></div>
+      <button class="icon-button" id="themeButton" aria-label="表示テーマを切り替える" title="表示テーマを切り替える">
+        <svg id="themeIcon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.91-.1-1.35A7 7 0 0 1 12 3Z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="app-shell">
+    <aside class="nav-drawer" id="navDrawer" aria-label="学習ナビゲーション">
+      <div class="learner-card">
+        <div class="learner-card-top"><div class="avatar" aria-hidden="true">P</div><div><strong>Python Explorer</strong><small>基礎から実務自走へ</small></div></div>
+        <div class="mastery-row"><span>全体習熟度</span><strong id="drawerMastery">0%</strong></div>
+        <div class="mastery-track"><span id="drawerMasteryFill" style="width:0%"></span></div>
+      </div>
+      <section class="drawer-section">
+        <div class="drawer-label">Learning path</div>
+        <nav class="course-map" id="courseMap" aria-label="コース一覧"></nav>
+      </section>
+      <section class="lesson-group">
+        <div class="current-course-copy"><small id="courseTag">COURSE 001</small><h2 id="courseTitle">最初の通信</h2><p id="courseSummary"></p></div>
+        <nav class="lesson-list" id="lessonList" aria-label="レッスン一覧"></nav>
+      </section>
+    </aside>
+    <button class="drawer-scrim" id="drawerScrim" aria-label="メニューを閉じる"></button>
+
+    <main class="workspace">
+      <div class="workspace-inner" id="main" aria-live="polite"></div>
+    </main>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <noscript><section class="noscript-card"><h1>JavaScriptを有効にしてください</h1><p>この教材では、コード実行、採点、進捗保存にJavaScriptを使用します。SafariやChromeなどの通常ブラウザで開いてください。</p></section></noscript>
+
+  <script src="reviewer.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
